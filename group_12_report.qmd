@@ -1,0 +1,42 @@
+---
+title: "Pedestrian Movement Patterns in Melbourne"
+author:
+  - "Aarushi"
+  - "Abhigna"
+  - "Aditi Srinivas"
+  - "Xijun Wei"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+  
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# Executive Summary
+
+This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The analysis focuses on the period from December 2025 to February 2026, which captures pedestrian activity during the summer season. The report examines how pedestrian volumes vary by time, location and direction across Melbourne. These findings can support better decisions in urban planning, transport management, retail planning and public space design.
+
+# Introduction
+
+Pedestrian activity is an important indicator of how people use public spaces in Melbourne. This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The dataset records hourly pedestrian counts using sensors placed at multiple locations across the city. It includes variables such as sensing date, hour of day, sensor name, location ID, direction counts and total pedestrian counts. The analysis focuses on the period from December 2025 to February 2026 to examine pedestrian movement during the summer season. The main objective is to identify how pedestrian volumes vary by time, location and direction. This topic is relevant because pedestrian trends can support better planning for transport, events, retail activity and public space management. 
+
+
+# Methodology
+
+
+
+# Results
+
+
+# Discussion, Conclusion and Recommendations
+
+
+
+# References
+
+City of Melbourne. (2026). *Pedestrian Counting System - Monthly counts per hour*. City of Melbourne Open Data. https://data.melbourne.vic.gov.au/
