@@ -27,6 +27,99 @@ Pedestrian activity is an important indicator of how people use public spaces in
 
 
 # Methodology
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+
+pedestrian_data <- read_csv("data/pedestrian-counting-system-monthly-counts-per-hour-2.csv")
+```
+
+```{r}
+#| label: filter-summer-data
+#| message: false
+#| warning: false
+
+pedestrian_summer <- pedestrian_data |>
+  mutate(
+    Sensing_Date = as.Date(Sensing_Date)
+  ) |>
+  filter(
+    Sensing_Date >= as.Date("2025-12-01"),
+    Sensing_Date <= as.Date("2026-02-28")
+  )
+```
+
+```{r}
+#| label: summer-data
+#| message: false
+#| warning: false
+#| 
+pedestrian_summer |>
+  summarise(
+    start_date = min(Sensing_Date, na.rm = TRUE),
+    end_date = max(Sensing_Date, na.rm = TRUE),
+    total_records = n(),
+    number_of_sensors = n_distinct(Sensor_Name)
+  )
+```
+
+This study examines pedestrian movement patterns in Melbourne during the university summer vacation period from 1 December 2025 to 28 February 2026. Data was obtained from the City of Melbourne Pedestrian Counting System dataset, which records pedestrian activity through sensors located throughout Melbourne.
+
+The dataset was filtered to include only observations recorded between December 2025 and February 2026. This period was selected because it corresponds to the university summer break, when pedestrian movement patterns may differ from the rest of the year. The filtered dataset was used for all subsequent analysis.
+
+The main variable analysed was `Total_of_Directions`, which represents the total number of pedestrians recorded by a sensor. `Sensor_Name` was used to identify individual sensor locations, while `Sensing_Date` and `HourDay` were used to organise observations by date and time.
+
+Data preparation was completed in R using the tidyverse package. The dataset was imported, filtered to the selected time period, and checked for consistency before analysis. Descriptive statistical methods were then used to summarise pedestrian activity across Melbourne. Total pedestrian counts, average pedestrian counts, and maximum pedestrian counts were calculated to provide an overview of activity levels across sensor locations.
+
+Table @tbl-summary presents summary statistics for pedestrian counts during the selected summer period. Figure @fig-top-sensors shows the sensor locations with the highest average pedestrian counts. These methods provide a reproducible approach for examining pedestrian movement patterns in Melbourne during the university summer vacation period.
+
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Summary statistics of pedestrian counts during the selected summer period"
+
+summary_table <- pedestrian_summer |>
+  summarise(
+    Total_Pedestrians = sum(Total_of_Directions, na.rm = TRUE),
+    Average_Pedestrians = mean(Total_of_Directions, na.rm = TRUE),
+    Maximum_Pedestrians = max(Total_of_Directions, na.rm = TRUE),
+    Number_of_Sensors = n_distinct(Sensor_Name)
+  )
+
+summary_table
+```
+
+```{r}
+#| label: fig-top-sensors
+#| fig-cap: "Top 10 sensor locations by average pedestrian count"
+
+pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
+  ) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 10) |>
+  ggplot(
+    aes(
+      x = reorder(Sensor_Name, Average_Count),
+      y = Average_Count
+    )
+  ) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Sensor Location",
+    y = "Average Pedestrian Count"
+  ) +
+  theme_minimal()
+```
+
 
 
 
