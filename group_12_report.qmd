@@ -1,0 +1,210 @@
+---
+title: "Pedestrian Movement Patterns in Melbourne"
+author:
+  - "Aarushi"
+  - "Abhigna"
+  - "Aditi Srinivas"
+  - "Xijun Wei"
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+  
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+# Executive Summary
+
+This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The analysis focuses on the period from December 2025 to February 2026, which captures pedestrian activity during the summer season. The report examines how pedestrian volumes vary by time, location and direction across Melbourne. These findings can support better decisions in urban planning, transport management, retail planning and public space design.
+
+# Introduction
+
+Pedestrian activity is an important indicator of how people use public spaces in Melbourne. This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The dataset records hourly pedestrian counts using sensors placed at multiple locations across the city. It includes variables such as sensing date, hour of day, sensor name, location ID, direction counts and total pedestrian counts. The analysis focuses on the period from December 2025 to February 2026 to examine pedestrian movement during the summer season. The main objective is to identify how pedestrian volumes vary by time, location and direction. This topic is relevant because pedestrian trends can support better planning for transport, events, retail activity and public space management.
+
+# Methodology
+
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+
+pedestrian_data <- read_csv("pedestrian-counting-system-monthly-counts-per-hour-2.csv")
+```
+
+```{r}
+#| label: filter-summer-data
+#| message: false
+#| warning: false
+
+pedestrian_summer <- pedestrian_data |>
+  mutate(
+    Sensing_Date = as.Date(Sensing_Date)
+  ) |>
+  filter(
+    Sensing_Date >= as.Date("2025-12-01"),
+    Sensing_Date <= as.Date("2026-02-28")
+  )
+```
+
+```{r}
+#| label: summer-data
+#| message: false
+#| warning: false
+#| 
+pedestrian_summer |>
+  summarise(
+    start_date = min(Sensing_Date, na.rm = TRUE),
+    end_date = max(Sensing_Date, na.rm = TRUE),
+    total_records = n(),
+    number_of_sensors = n_distinct(Sensor_Name)
+  )
+```
+
+This study examines pedestrian movement patterns in Melbourne during the university summer vacation period from 1 December 2025 to 28 February 2026. Data was obtained from the City of Melbourne Pedestrian Counting System dataset, which records pedestrian activity through sensors located throughout Melbourne.
+
+The dataset was filtered to include only observations recorded between December 2025 and February 2026. This period was selected because it corresponds to the university summer break, when pedestrian movement patterns may differ from the rest of the year. The filtered dataset was used for all subsequent analysis.
+
+The main variable analysed was `Total_of_Directions`, which represents the total number of pedestrians recorded by a sensor. `Sensor_Name` was used to identify individual sensor locations, while `Sensing_Date` and `HourDay` were used to organise observations by date and time.
+
+Data preparation was completed in R using the tidyverse package. The dataset was imported, filtered to the selected time period, and checked for consistency before analysis. Descriptive statistical methods were then used to summarise pedestrian activity across Melbourne. Total pedestrian counts, average pedestrian counts, and maximum pedestrian counts were calculated to provide an overview of activity levels across sensor locations.
+
+Table @tbl-summary presents summary statistics for pedestrian counts during the selected summer period. Figure @fig-top-sensors shows the sensor locations with the highest average pedestrian counts. These methods provide a reproducible approach for examining pedestrian movement patterns in Melbourne during the university summer vacation period.
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Summary statistics of pedestrian counts during the selected summer period"
+
+summary_table <- pedestrian_summer |>
+  summarise(
+    Total_Pedestrians = sum(Total_of_Directions, na.rm = TRUE),
+    Average_Pedestrians = mean(Total_of_Directions, na.rm = TRUE),
+    Maximum_Pedestrians = max(Total_of_Directions, na.rm = TRUE),
+    Number_of_Sensors = n_distinct(Sensor_Name)
+  )
+
+summary_table
+```
+
+```{r}
+#| label: fig-top-sensors
+#| fig-cap: "Top 10 sensor locations by average pedestrian count"
+
+pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
+  ) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 10) |>
+  ggplot(
+    aes(
+      x = reorder(Sensor_Name, Average_Count),
+      y = Average_Count
+    )
+  ) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Sensor Location",
+    y = "Average Pedestrian Count"
+  ) +
+  theme_minimal()
+```
+
+# Results
+
+
+
+```{r}
+#| label: fig-daily-trend
+#| fig-cap: "Daily average pedestrian counts for top 5 sensor locations (Dec 2025 – Feb 2026)"
+
+Sys.setlocale("LC_TIME", "C")
+
+top_location <- pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
+  ) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 5)
+
+data <- pedestrian_summer |> 
+  filter(Sensor_Name %in% top_location$Sensor_Name) |> 
+  group_by(Sensing_Date,
+           Sensor_Name) |> 
+  summarise(mean_count = mean(Total_of_Directions),
+            .groups = "drop")
+
+ggplot(data, aes(Sensing_Date,
+                 mean_count)) +
+  geom_line() +
+  facet_wrap(~Sensor_Name) +
+  labs(
+    x = "Date",
+    y = "Average Pedestrian Count"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+#| label: tbl_top10_summary
+#| tbl-cap: "Top 10 sensor locations by total pedestrian count, with peak hour statistics"
+
+location_summary <- pedestrian_summer |> 
+  group_by(Sensor_Name) |> 
+  summarise(Total_Count = sum(Total_of_Directions),
+            Mean_Count = round(mean(Total_of_Directions),0),
+            Max_Count = max(Total_of_Directions)) |> 
+  mutate(Pct_Total_Traffic = round(Total_Count/sum(Total_Count)*100,2))
+
+peak_hour <- pedestrian_summer |> 
+  group_by(Sensor_Name, 
+           HourDay) |> 
+  summarise(Hourly_Mean = round(mean(Total_of_Directions),0),
+            .groups = "drop") |> 
+  group_by(Sensor_Name) |> 
+  slice_max(Hourly_Mean,
+            n = 1,
+            with_ties = FALSE) |> 
+  rename(Peak_Hour = HourDay,
+         Peak_Hour_Mean = Hourly_Mean)
+
+
+top10_summary <- location_summary |> 
+  left_join(peak_hour,
+            by = "Sensor_Name") |> 
+  arrange(desc(Total_Count)) |> 
+  slice(1:10) |> 
+  mutate(Rank = row_number()) |> 
+  select(Rank,
+         Sensor_Name,
+         Total_Count,
+         Pct_Total_Traffic,
+         Mean_Count,
+         Max_Count,
+         Peak_Hour,
+         Peak_Hour_Mean
+         )
+
+top10_summary
+```
+
+@fig-daily-trend shows daily average pedestrian counts for the five busiest sensors from December 2025 to March 2026. Swa123_T consistently recorded the highest counts, with peaks around late December and early January. All five sensors show elevated activity in December, a decline in January, and a further drop in February and March. This pattern suggests reduced pedestrian traffic after the summer holiday period.
+
+@tbl-top10-summary lists the top 10 sensor locations by total pedestrian count. Swa123_T ranks first with 3.63 million pedestrians (4.46% of total traffic), followed by Swa31 (3.47 million) and SouthB_T (3.38 million). Despite its high total volume, SouthB_T has a much lower average count (783) than other top‑ranked sensors, indicating it may operate on fewer days or experience high variability. Most sensors reach their peak hour at 17:00, except Swa123_T and Eli124_T, which peak at 13:00. Peak hour mean counts vary considerably, from 1,530 (Flis_T) to 3,607 (Swa123_T), highlighting substantial temporal and spatial variation in pedestrian demand across Melbourne.
+
+
+# Discussion, Conclusion and Recommendations
+
+# References
+
+City of Melbourne. (2026). *Pedestrian Counting System - Monthly counts per hour*. City of Melbourne Open Data. https://data.melbourne.vic.gov.au/
