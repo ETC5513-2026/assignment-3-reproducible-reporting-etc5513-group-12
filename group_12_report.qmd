@@ -195,7 +195,12 @@ top10_summary <- location_summary |>
          Peak_Hour_Mean
          )
 
-top10_summary
+top10_summary |> 
+  knitr::kable(
+    caption = "Top 10 sensor locations by total pedestrian count, with peak hour statistics",
+    digits = 2,
+    format.args = list(big.mark = ",")
+  )
 ```
 
 @fig-daily-trend shows daily average pedestrian counts for the five busiest sensors from December 2025 to February 2026. Swa123_T consistently recorded the highest counts, with peaks around late December and early January. All five sensors show elevated activity in December, a decline in January, and a further drop in February and March. This pattern suggests reduced pedestrian traffic after the summer holiday period.
