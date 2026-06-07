@@ -156,7 +156,7 @@ ggplot(data, aes(Sensing_Date,
 ```
 
 ```{r}
-#| label: tbl_top10_summary
+#| label: tbl-top10-summary
 #| tbl-cap: "Top 10 sensor locations by total pedestrian count, with peak hour statistics"
 
 location_summary <- pedestrian_summer |> 
@@ -198,7 +198,7 @@ top10_summary <- location_summary |>
 top10_summary
 ```
 
-@fig-daily-trend shows daily average pedestrian counts for the five busiest sensors from December 2025 to March 2026. Swa123_T consistently recorded the highest counts, with peaks around late December and early January. All five sensors show elevated activity in December, a decline in January, and a further drop in February and March. This pattern suggests reduced pedestrian traffic after the summer holiday period.
+@fig-daily-trend shows daily average pedestrian counts for the five busiest sensors from December 2025 to February 2026. Swa123_T consistently recorded the highest counts, with peaks around late December and early January. All five sensors show elevated activity in December, a decline in January, and a further drop in February and March. This pattern suggests reduced pedestrian traffic after the summer holiday period.
 
 @tbl-top10-summary lists the top 10 sensor locations by total pedestrian count. Swa123_T ranks first with 3.63 million pedestrians (4.46% of total traffic), followed by Swa31 (3.47 million) and SouthB_T (3.38 million). Despite its high total volume, SouthB_T has a much lower average count (783) than other top‑ranked sensors, indicating it may operate on fewer days or experience high variability. Most sensors reach their peak hour at 17:00, except Swa123_T and Eli124_T, which peak at 13:00. Peak hour mean counts vary considerably, from 1,530 (Flis_T) to 3,607 (Swa123_T), highlighting substantial temporal and spatial variation in pedestrian demand across Melbourne.
 
