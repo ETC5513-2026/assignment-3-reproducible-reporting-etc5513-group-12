@@ -27,7 +27,83 @@ Pedestrian activity is an important indicator of how people use public spaces in
 
 
 # Methodology
+```{r}
+#| label: setup
+#| message: false
+#| warning: false
 
+options(bitmapType = "quartz")
+
+library(tidyverse)
+library(knitr)
+
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.ext = "png"
+)
+
+pedestrian_data <- read_csv("data/pedestrian-counting-system-monthly-counts-per-hour-2.csv")
+```
+
+```{r}
+#| label: filter-summer-data
+
+pedestrian_summer <- pedestrian_data |>
+  mutate(Sensing_Date = as.Date(Sensing_Date)) |>
+  filter(
+    Sensing_Date >= as.Date("2025-12-01"),
+    Sensing_Date <= as.Date("2026-02-28")
+  )
+```
+
+This study examines pedestrian movement patterns in Melbourne during the 
+summer period from 1 December 2025 to 28 February 2026. Data was obtained 
+from the City of Melbourne Pedestrian Counting System, which records 
+pedestrian activity through sensors located throughout the city. The dataset 
+was filtered to include only observations within this period, as it 
+corresponds to the university summer break when movement patterns may differ 
+from the rest of the year.
+
+The main variable analysed was `Total_of_Directions`, representing the total 
+number of pedestrians recorded by each sensor. `Sensor_Name` identified 
+individual sensor locations, while `Sensing_Date` and `HourDay` organised 
+observations by date and time. Data preparation was completed in R using the 
+tidyverse package. Descriptive statistics including total, average and maximum 
+pedestrian counts were calculated to summarise activity levels.
+
+@tbl-summary presents summary statistics for pedestrian counts during the 
+selected period. @fig-top-sensors shows the ten sensor locations with the 
+highest average pedestrian counts.
+
+```{r}
+#| label: tbl-summary
+#| tbl-cap: "Summary statistics of pedestrian counts during summer 2025–2026"
+
+pedestrian_summer |>
+  summarise(
+    `Total Pedestrians` = sum(Total_of_Directions, na.rm = TRUE),
+    `Average per Record` = round(mean(Total_of_Directions, na.rm = TRUE), 1),
+    `Maximum Count` = max(Total_of_Directions, na.rm = TRUE),
+    `Number of Sensors` = n_distinct(Sensor_Name)
+  ) |>
+  kable()
+```
+
+```{r}
+#| label: fig-top-sensors
+#| fig-cap: "Top 10 sensor locations by average pedestrian count (Dec 2025 – Feb 2026)"
+
+pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(Average_Count = mean(Total_of_Directions, na.rm = TRUE)) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 10) |>
+  ggplot(aes(x = reorder(Sensor_Name, Average_Count), y = Average_Count)) +
+  geom_col() +
+  coord_flip() +
+  labs(x = "Sensor Location", y = "Average Pedestrian Count") +
+  theme_minimal()
+```
 
 
 # Results
