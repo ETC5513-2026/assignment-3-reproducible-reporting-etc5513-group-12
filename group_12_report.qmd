@@ -6,7 +6,7 @@ author:
   - "Aditi Srinivas"
   - "Xijun Wei"
 format:
-  html:
+  typst:
     toc: true
     toc-depth: 2
     number-sections: true
@@ -23,111 +23,96 @@ This report analyses pedestrian counting data from the City of Melbourne Open Da
 
 # Introduction
 
-Pedestrian activity is an important indicator of how people use public spaces in Melbourne. This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The dataset records hourly pedestrian counts using sensors placed at multiple locations across the city. It includes variables such as sensing date, hour of day, sensor name, location ID, direction counts and total pedestrian counts. The analysis focuses on the period from December 2025 to February 2026 to examine pedestrian movement during the summer season. The main objective is to identify how pedestrian volumes vary by time, location and direction. This topic is relevant because pedestrian trends can support better planning for transport, events, retail activity and public space management.
+Pedestrian activity is an important indicator of how people use public spaces in Melbourne. This report analyses pedestrian counting data from the City of Melbourne Open Data portal to understand movement patterns across different sensor locations. The dataset records hourly pedestrian counts using sensors placed at multiple locations across the city. It includes variables such as sensing date, hour of day, sensor name, location ID, direction counts and total pedestrian counts. The analysis focuses on the period from December 2025 to February 2026 to examine pedestrian movement during the summer season. The main objective is to identify how pedestrian volumes vary by time, location and direction. This topic is relevant because pedestrian trends can support better planning for transport, events, retail activity and public space management. 
+
 
 # Methodology
-
 ```{r}
 #| label: setup
 #| message: false
 #| warning: false
 
+options(bitmapType = "quartz")
+
 library(tidyverse)
 library(knitr)
-library(ggplot2)
 
-pedestrian_data <- read_csv("pedestrian-counting-system-monthly-counts-per-hour-2.csv")
+knitr::opts_chunk$set(
+  dev = "png",
+  fig.ext = "png"
+)
+
+pedestrian_data <- read_csv("data/pedestrian-counting-system-monthly-counts-per-hour-2.csv")
 ```
 
 ```{r}
 #| label: filter-summer-data
-#| message: false
-#| warning: false
 
 pedestrian_summer <- pedestrian_data |>
-  mutate(
-    Sensing_Date = as.Date(Sensing_Date)
-  ) |>
+  mutate(Sensing_Date = as.Date(Sensing_Date)) |>
   filter(
     Sensing_Date >= as.Date("2025-12-01"),
     Sensing_Date <= as.Date("2026-02-28")
   )
 ```
 
-```{r}
-#| label: summer-data
-#| message: false
-#| warning: false
-#| 
-pedestrian_summer |>
-  summarise(
-    start_date = min(Sensing_Date, na.rm = TRUE),
-    end_date = max(Sensing_Date, na.rm = TRUE),
-    total_records = n(),
-    number_of_sensors = n_distinct(Sensor_Name)
-  )
-```
+This study examines pedestrian movement patterns in Melbourne during the 
+summer period from 1 December 2025 to 28 February 2026. Data was obtained 
+from the City of Melbourne Pedestrian Counting System, which records 
+pedestrian activity through sensors located throughout the city. The dataset 
+was filtered to include only observations within this period, as it 
+corresponds to the university summer break when movement patterns may differ 
+from the rest of the year.
 
-This study examines pedestrian movement patterns in Melbourne during the university summer vacation period from 1 December 2025 to 28 February 2026. Data was obtained from the City of Melbourne Pedestrian Counting System dataset, which records pedestrian activity through sensors located throughout Melbourne.
+The main variable analysed was `Total_of_Directions`, representing the total 
+number of pedestrians recorded by each sensor. `Sensor_Name` identified 
+individual sensor locations, while `Sensing_Date` and `HourDay` organised 
+observations by date and time. Data preparation was completed in R using the 
+tidyverse package. Descriptive statistics including total, average and maximum 
+pedestrian counts were calculated to summarise activity levels.
 
-The dataset was filtered to include only observations recorded between December 2025 and February 2026. This period was selected because it corresponds to the university summer break, when pedestrian movement patterns may differ from the rest of the year. The filtered dataset was used for all subsequent analysis.
-
-The main variable analysed was `Total_of_Directions`, which represents the total number of pedestrians recorded by a sensor. `Sensor_Name` was used to identify individual sensor locations, while `Sensing_Date` and `HourDay` were used to organise observations by date and time.
-
-Data preparation was completed in R using the tidyverse package. The dataset was imported, filtered to the selected time period, and checked for consistency before analysis. Descriptive statistical methods were then used to summarise pedestrian activity across Melbourne. Total pedestrian counts, average pedestrian counts, and maximum pedestrian counts were calculated to provide an overview of activity levels across sensor locations.
-
-Table @tbl-summary presents summary statistics for pedestrian counts during the selected summer period. Figure @fig-top-sensors shows the sensor locations with the highest average pedestrian counts. These methods provide a reproducible approach for examining pedestrian movement patterns in Melbourne during the university summer vacation period.
+@tbl-summary presents summary statistics for pedestrian counts during the 
+selected period. @fig-top-sensors shows the ten sensor locations with the 
+highest average pedestrian counts.
 
 ```{r}
 #| label: tbl-summary
-#| tbl-cap: "Summary statistics of pedestrian counts during the selected summer period"
+#| tbl-cap: "Summary statistics of pedestrian counts during summer 2025–2026"
 
-summary_table <- pedestrian_summer |>
+pedestrian_summer |>
   summarise(
-    Total_Pedestrians = sum(Total_of_Directions, na.rm = TRUE),
-    Average_Pedestrians = mean(Total_of_Directions, na.rm = TRUE),
-    Maximum_Pedestrians = max(Total_of_Directions, na.rm = TRUE),
-    Number_of_Sensors = n_distinct(Sensor_Name)
-  )
-
-summary_table
+    `Total Pedestrians` = sum(Total_of_Directions, na.rm = TRUE),
+    `Average per Record` = round(mean(Total_of_Directions, na.rm = TRUE), 1),
+    `Maximum Count` = max(Total_of_Directions, na.rm = TRUE),
+    `Number of Sensors` = n_distinct(Sensor_Name)
+  ) |>
+  kable()
 ```
 
 ```{r}
 #| label: fig-top-sensors
-#| fig-cap: "Top 10 sensor locations by average pedestrian count"
+#| fig-cap: "Top 10 sensor locations by average pedestrian count (Dec 2025 – Feb 2026)"
 
 pedestrian_summer |>
   group_by(Sensor_Name) |>
-  summarise(
-    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
-  ) |>
+  summarise(Average_Count = mean(Total_of_Directions, na.rm = TRUE)) |>
   arrange(desc(Average_Count)) |>
   slice_head(n = 10) |>
-  ggplot(
-    aes(
-      x = reorder(Sensor_Name, Average_Count),
-      y = Average_Count
-    )
-  ) +
+  ggplot(aes(x = reorder(Sensor_Name, Average_Count), y = Average_Count)) +
   geom_col() +
   coord_flip() +
-  labs(
-    x = "Sensor Location",
-    y = "Average Pedestrian Count"
-  ) +
+  labs(x = "Sensor Location", y = "Average Pedestrian Count") +
   theme_minimal()
 ```
 
+
 # Results
-
-
 
 ```{r}
 #| label: fig-daily-trend
 #| fig-cap: "Daily average pedestrian counts for top 5 sensor locations (Dec 2025 – Feb 2026)"
 
-Sys.setlocale("LC_TIME", "C")
+invisible(Sys.setlocale("LC_TIME", "C"))
 
 top_location <- pedestrian_summer |>
   group_by(Sensor_Name) |>
@@ -195,10 +180,12 @@ top10_summary <- location_summary |>
          Peak_Hour_Mean
          )
 
-top10_summary |> 
+top10_summary %>%
+  select(Rank, Sensor_Name, Total_Count, Pct_Total_Traffic, Mean_Count, Max_Count, Peak_Hour, Peak_Hour_Mean) %>%
   knitr::kable(
     caption = "Top 10 sensor locations by total pedestrian count, with peak hour statistics",
-    digits = 2,
+    col.names = c("Rank", "Sensor", "Total", "Pct", "Mean", "Max", "PeakHour", "PeakMean"),
+    digits = 0,
     format.args = list(big.mark = ",")
   )
 ```
@@ -209,6 +196,8 @@ top10_summary |>
 
 
 # Discussion, Conclusion and Recommendations
+
+
 
 # References
 
