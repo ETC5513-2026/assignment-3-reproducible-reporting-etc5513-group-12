@@ -108,6 +108,92 @@ pedestrian_summer |>
 
 # Results
 
+```{r}
+#| label: fig-daily-trend
+#| fig-cap: "Daily average pedestrian counts for top 5 sensor locations (Dec 2025 – Feb 2026)"
+
+invisible(Sys.setlocale("LC_TIME", "C"))
+
+top_location <- pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
+  ) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 5)
+
+data <- pedestrian_summer |> 
+  filter(Sensor_Name %in% top_location$Sensor_Name) |> 
+  group_by(Sensing_Date,
+           Sensor_Name) |> 
+  summarise(mean_count = mean(Total_of_Directions),
+            .groups = "drop")
+
+ggplot(data, aes(Sensing_Date,
+                 mean_count)) +
+  geom_line() +
+  facet_wrap(~Sensor_Name) +
+  labs(
+    x = "Date",
+    y = "Average Pedestrian Count"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+#| label: tbl-top10-summary
+#| tbl-cap: "Top 10 sensor locations by total pedestrian count, with peak hour statistics"
+
+location_summary <- pedestrian_summer |> 
+  group_by(Sensor_Name) |> 
+  summarise(Total_Count = sum(Total_of_Directions),
+            Mean_Count = round(mean(Total_of_Directions),0),
+            Max_Count = max(Total_of_Directions)) |> 
+  mutate(Pct_Total_Traffic = round(Total_Count/sum(Total_Count)*100,2))
+
+peak_hour <- pedestrian_summer |> 
+  group_by(Sensor_Name, 
+           HourDay) |> 
+  summarise(Hourly_Mean = round(mean(Total_of_Directions),0),
+            .groups = "drop") |> 
+  group_by(Sensor_Name) |> 
+  slice_max(Hourly_Mean,
+            n = 1,
+            with_ties = FALSE) |> 
+  rename(Peak_Hour = HourDay,
+         Peak_Hour_Mean = Hourly_Mean)
+
+
+top10_summary <- location_summary |> 
+  left_join(peak_hour,
+            by = "Sensor_Name") |> 
+  arrange(desc(Total_Count)) |> 
+  slice(1:10) |> 
+  mutate(Rank = row_number()) |> 
+  select(Rank,
+         Sensor_Name,
+         Total_Count,
+         Pct_Total_Traffic,
+         Mean_Count,
+         Max_Count,
+         Peak_Hour,
+         Peak_Hour_Mean
+         )
+
+top10_summary %>%
+  select(Rank, Sensor_Name, Total_Count, Pct_Total_Traffic, Mean_Count, Max_Count, Peak_Hour, Peak_Hour_Mean) %>%
+  knitr::kable(
+    caption = "Top 10 sensor locations by total pedestrian count, with peak hour statistics",
+    col.names = c("Rank", "Sensor", "Total", "Pct", "Mean", "Max", "PeakHour", "PeakMean"),
+    digits = 0,
+    format.args = list(big.mark = ",")
+  )
+```
+
+@fig-daily-trend shows daily average pedestrian counts for the five busiest sensors from December 2025 to February 2026. Swa123_T consistently recorded the highest counts, with peaks around late December and early January. All five sensors show elevated activity in December, a decline in January, and a further drop in February and March. This pattern suggests reduced pedestrian traffic after the summer holiday period.
+
+@tbl-top10-summary lists the top 10 sensor locations by total pedestrian count. Swa123_T ranks first with 3.63 million pedestrians (4.46% of total traffic), followed by Swa31 (3.47 million) and SouthB_T (3.38 million). Despite its high total volume, SouthB_T has a much lower average count (783) than other top‑ranked sensors, indicating it may operate on fewer days or experience high variability. Most sensors reach their peak hour at 17:00, except Swa123_T and Eli124_T, which peak at 13:00. Peak hour mean counts vary considerably, from 1,530 (Flis_T) to 3,607 (Swa123_T), highlighting substantial temporal and spatial variation in pedestrian demand across Melbourne.
+
 
 # Discussion, Conclusion and Recommendations
 
