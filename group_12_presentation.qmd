@@ -1,0 +1,172 @@
+---
+title: "Pedestrian Movement Patterns in Melbourne"
+subtitle: "ETC5513 Assignment 3"
+author:
+  - "Aarushi"
+  - "Abhigna"
+  - "Aditi Srinivas"
+  - "Xijun Wei"
+date: today
+format:
+  revealjs:
+    theme: simple
+    slide-number: true
+    transition: fade
+    smaller: true
+    scrollable: true
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup-slides
+#| message: false
+#| warning: false
+
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+pedestrian_data <- read_csv(
+  "data/pedestrian-counting-system-monthly-counts-per-hour-2.csv"
+)
+
+pedestrian_summer <- pedestrian_data |>
+  mutate(Sensing_Date = as.Date(Sensing_Date)) |>
+  filter(
+    Sensing_Date >= as.Date("2025-12-01"),
+    Sensing_Date <= as.Date("2026-02-28")
+  )
+```
+
+## Problem Introduction
+
+- Melbourne CBD generates millions of pedestrian movements daily
+- Understanding **where** and **when** people move is critical for city planning
+- Summer brings unique patterns driven by tourism, retail and events
+- **Research question:** How do pedestrian volumes vary by location and time during the 2025-26 summer?
+
+---
+
+## Dataset Description
+
+- Source: City of Melbourne Open Data Portal
+- Pedestrian Counting System - automated sensors across the CBD
+- Filtered to: 1 December 2025 to 28 February 2026
+- Key variables:
+  - `Total_of_Directions` - hourly pedestrian count per sensor
+  - `Sensor_Name` - sensor location
+  - `Sensing_Date` and `HourDay` - date and hour of observation
+
+---
+
+## Methods
+
+- Data filtered to summer period using R and tidyverse
+- Descriptive statistics calculated: total, mean and maximum counts
+- Top sensor locations identified by average hourly count
+- Daily trends examined for the five busiest sensors
+- All analysis fully reproducible using renv and Quarto
+
+---
+
+## Results - Daily Trends
+
+- Pedestrian activity **highest in December**, declines from January
+
+```{r}
+#| fig-width: 9
+#| fig-height: 4
+
+invisible(Sys.setlocale("LC_TIME", "C"))
+
+top_5 <- pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Average_Count = mean(Total_of_Directions, na.rm = TRUE)
+  ) |>
+  arrange(desc(Average_Count)) |>
+  slice_head(n = 5)
+
+pedestrian_summer |>
+  filter(Sensor_Name %in% top_5$Sensor_Name) |>
+  group_by(Sensing_Date, Sensor_Name) |>
+  summarise(
+    mean_count = mean(Total_of_Directions),
+    .groups = "drop"
+  ) |>
+  ggplot(aes(Sensing_Date, mean_count)) +
+  geom_line(colour = "#2c7bb6", linewidth = 0.8) +
+  scale_x_date(date_breaks = "1 month", date_labels = "%b") +
+  facet_wrap(~Sensor_Name, ncol = 3) +
+  labs(x = "Date", y = "Average Count") +
+  theme_minimal(base_size = 11) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
+  )
+```
+
+---
+
+## Results - Top 10 Sensor Locations
+
+- **Swa123_T** busiest sensor (3.63M pedestrians, 4.5% of total traffic)
+- Most sensors peak **at 5 PM**; two peak at **1 PM**
+
+```{r}
+#| fig-width: 8
+#| fig-height: 4
+
+location_summary <- pedestrian_summer |>
+  group_by(Sensor_Name) |>
+  summarise(
+    Total_Count = sum(Total_of_Directions),
+    Mean_Count = round(mean(Total_of_Directions), 0),
+    Max_Count = max(Total_of_Directions)
+  ) |>
+  mutate(Pct_Total_Traffic = round(Total_Count / sum(Total_Count) * 100, 2))
+
+peak_hour <- pedestrian_summer |>
+  group_by(Sensor_Name, HourDay) |>
+  summarise(
+    Hourly_Mean = round(mean(Total_of_Directions), 0),
+    .groups = "drop"
+  ) |>
+  group_by(Sensor_Name) |>
+  slice_max(Hourly_Mean, n = 1, with_ties = FALSE) |>
+  rename(Peak_Hour = HourDay, Peak_Hour_Mean = Hourly_Mean)
+
+location_summary |>
+  left_join(peak_hour, by = "Sensor_Name") |>
+  arrange(desc(Total_Count)) |>
+  slice(1:10) |>
+  mutate(Rank = row_number()) |>
+  select(Rank, Sensor_Name, Total_Count, Pct_Total_Traffic,
+         Mean_Count, Max_Count, Peak_Hour, Peak_Hour_Mean) |>
+  knitr::kable(
+    digits = 0,
+    format.args = list(big.mark = ",")
+  ) |>
+  kableExtra::kable_styling(font_size = 14, full_width = FALSE)
+```
+
+---
+
+## Conclusions
+
+- Pedestrian movement in Melbourne CBD is not random or evenly distributed
+- Activity is shaped by two key factors: **place** and **time**
+- The CBD functions as a collection of distinct activity zones, each with its own rhythm
+- Effective pedestrian planning must be targeted and location-specific, not one-size-fits-all
+
+---
+
+## Recommendations
+
+- Prioritise pedestrian planning in high-volume areas such as **Swanston Street, Southbank and Elizabeth Street**
+- Improve pedestrian flow through clearer signage, better footpath design and crowd management during peak periods
+- Align public transport and cleaning services with the busiest times, especially around the **17:00 peak**
+- Use pedestrian count data to support event planning and manage pressure during busy holiday periods
+- Future analysis should compare summer with other seasons and include factors such as weather, events and public holidays
